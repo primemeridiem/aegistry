@@ -16,7 +16,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
-from reauth.factors.oauth2.state import (
+from aegistry.factors.oauth2.state import (
     OAuth2State,
     OAuth2StateService,
 )

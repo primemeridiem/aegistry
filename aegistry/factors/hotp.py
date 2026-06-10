@@ -9,10 +9,10 @@ from cryptography.hazmat.primitives.hashes import SHA1
 from cryptography.hazmat.primitives.twofactor import InvalidToken
 from cryptography.hazmat.primitives.twofactor.hotp import HOTP as CryptoHOTP
 
-from reauth.amr import AuthenticationMethodReference
-from reauth.exceptions import ReauthException
-from reauth.factors.base import FactorBase
-from reauth.logging import get_logger
+from aegistry.amr import AuthenticationMethodReference
+from aegistry.exceptions import AegistryException
+from aegistry.factors.base import FactorBase
+from aegistry.logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -59,7 +59,7 @@ class HOTPEnrollment:
         return self._impl.get_provisioning_uri(account_name, self.counter, issuer_name)
 
 
-class HOTPException(ReauthException):
+class HOTPException(AegistryException):
     """Base exception for HOTP errors."""
 
 

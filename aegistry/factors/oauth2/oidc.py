@@ -7,7 +7,7 @@ import urllib.parse
 import httpx
 import jwt
 
-from reauth.factors.oauth2.base import (
+from aegistry.factors.oauth2.base import (
     RFC_6749_TOKEN_ERROR_MAP,
     OAuth2Exception,
     OAuth2Factor,
@@ -15,10 +15,10 @@ from reauth.factors.oauth2.base import (
     OAuth2TokenExchangeException,
     TokenResponse,
 )
-from reauth.factors.oauth2.pkce import CodeChallengeMethod
-from reauth.factors.oauth2.state import OAuth2State, OAuth2StateService
-from reauth.logging import get_logger
-from reauth.timestamp import get_current_timestamp
+from aegistry.factors.oauth2.pkce import CodeChallengeMethod
+from aegistry.factors.oauth2.state import OAuth2State, OAuth2StateService
+from aegistry.logging import get_logger
+from aegistry.timestamp import get_current_timestamp
 
 logger = get_logger(__name__)
 

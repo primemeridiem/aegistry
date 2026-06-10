@@ -1,10 +1,10 @@
-"""Logging configuration for reauth."""
+"""Logging configuration for aegistry."""
 
 import logging
 
 
 def get_logger(name: str) -> logging.Logger:
-    """Get a logger for a reauth module.
+    """Get a logger for a aegistry module.
 
     Args:
         name: The logger name, typically __name__.
@@ -20,7 +20,7 @@ def configure_logger(
     level: int = logging.WARNING,
     handler: logging.Handler | None = None,
 ) -> logging.Logger:
-    """Configure the reauth logger with a handler.
+    """Configure the aegistry logger with a handler.
 
     This is an optional helper for library users to quickly set up logging.
     Users can also configure logging manually using standard logging configuration.
@@ -30,13 +30,13 @@ def configure_logger(
         handler: A logging handler (default: StreamHandler to stderr).
 
     Returns:
-        The configured reauth logger.
+        The configured aegistry logger.
 
     Example:
-        >>> from reauth.logging import configure_logger
+        >>> from aegistry.logging import configure_logger
         >>> configure_logger(level=logging.DEBUG)
     """
-    logger = logging.getLogger("reauth")
+    logger = logging.getLogger("aegistry")
     logger.setLevel(level)
 
     if handler is None:
@@ -51,8 +51,8 @@ def configure_logger(
 
 
 def _ensure_null_handler() -> None:
-    """Ensure the reauth logger has a NullHandler to prevent warnings."""
-    logger = logging.getLogger("reauth")
+    """Ensure the aegistry logger has a NullHandler to prevent warnings."""
+    logger = logging.getLogger("aegistry")
     if not logger.handlers:
         logger.addHandler(logging.NullHandler())
 

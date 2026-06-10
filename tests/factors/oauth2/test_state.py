@@ -3,7 +3,7 @@ import datetime
 import pytest
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from reauth.factors.oauth2.state import (
+from aegistry.factors.oauth2.state import (
     ExpiredStateException,
     InvalidStateException,
     OAuth2State,
@@ -64,7 +64,7 @@ class TestOAuth2StateCreate:
             redirect_uri="https://example.com/callback",
         )
 
-        assert state_token.startswith("reauth_oauth2_")
+        assert state_token.startswith("aegistry_oauth2_")
 
     async def test_without_code_verifier(
         self, oauth2_state_service: SQLAlchemyOAuth2StateService

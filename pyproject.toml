@@ -1,53 +1,59 @@
-
 [project]
-name = "reauth"
-authors = [{ name = "reauth", email = "hello@fvoron.com" }]
-description = "The authentication toolkit for Python"
+name = "aegistry"
+version = "0.1.0"
+authors = [{ name = "aegistry" }]
+description = "Batteries-included authentication toolkit for FastAPI — a friendly fork of reauth"
 readme = "README.md"
-dynamic = ["version"]
+license = { file = "LICENSE" }
 classifiers = [
     "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
 ]
-requires-python = ">=3.14"
-dependencies = ["anyio", "cryptography>=48.0.0,<49.0.0", "httpx>=0.28.1", "pyjwt>=2.12.1"]
+requires-python = ">=3.12"
+dependencies = [
+    "anyio",
+    "cryptography>=48.0.0,<49.0.0",
+    "httpx>=0.28.1",
+    "pyjwt>=2.12.1",
+]
 
-[project.urls]
-Documentation = "https://frankie567.github.io/reauth/"
-Source = "https://github.com/frankie567/reauth"
+[project.optional-dependencies]
+password = ["pwdlib[argon2]>=0.2.1"]
+sqlalchemy = ["sqlalchemy[asyncio]>=2.0.30"]
+fastapi = ["fastapi>=0.115.0"]
+all = ["aegistry[password,sqlalchemy,fastapi]"]
 
 [build-system]
-requires = ["hatchling", "hatch-regex-commit"]
+requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.hatch.version]
-source = "regex_commit"
-commit_extra_args = ["-e"]
-path = "reauth/__init__.py"
+[tool.hatch.build.targets.wheel]
+packages = ["aegistry"]
 
 [dependency-groups]
 dev = [
-    "ty",
     "ruff",
     "pytest",
     "pytest-cov",
-    "mkdocs-material",
-    "mkdocstrings[python]",
-    "sqlalchemy[asyncio]>=2.0.49",
+    "sqlalchemy[asyncio]>=2.0.30",
     "aiosqlite>=0.22.1",
+    "pwdlib[argon2]>=0.2.1",
+    "fastapi>=0.115.0",
+    "respx>=0.22.0",
 ]
 
 [tool.ruff]
-target-version = "py314"
+target-version = "py312"
 
 [tool.ruff.lint]
 preview = true
-extend-select = ["I", "TRY", "UP", "DOC", "B904", "TRY003"]
-per-file-ignores = { "tests/**" = ["DOC"] }
+extend-select = ["I", "TRY", "UP", "B904", "TRY003"]
+per-file-ignores = { "tests/**" = ["TRY"] }
 
 [tool.pytest.ini_options]
-addopts = "--cov=reauth/ --cov-report=term-missing"
-
+addopts = "--cov=aegistry/ --cov-report=term-missing"
 
 [tool.uv]
 default-groups = ["dev"]

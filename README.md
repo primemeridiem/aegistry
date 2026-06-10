@@ -1,103 +1,64 @@
-# Reauth
+# Aegistry
 
 <p align="center">
-    <em>The authentication toolkit for Python</em>
+    <em>Batteries-included authentication for FastAPI</em>
 </p>
 
-[![build](https://github.com/frankie567/reauth/workflows/Build/badge.svg)](https://github.com/frankie567/reauth/actions)
-[![codecov](https://codecov.io/gh/frankie567/reauth/branch/master/graph/badge.svg)](https://codecov.io/gh/frankie567/reauth)
-[![PyPI version](https://badge.fury.io/py/reauth.svg)](https://badge.fury.io/py/reauth)
+Aegistry is an authentication toolkit for Python with first-class FastAPI
+integration: Email/Password, Email OTP, Google Sign-In, LINE Login, MFA
+(TOTP, backup codes), and session management — on Python 3.12+.
 
----
+> [!NOTE]
+> Aegistry's core is a friendly fork of [reauth](https://github.com/frankie567/reauth)
+> 0.1.8 (MIT, © 2026 François Voron), backported to Python 3.12. Aegistry adds the
+> integration layers reauth doesn't ship yet: password & LINE factors, post-login
+> session management, SQLAlchemy stores, and ready-made FastAPI routers. We aim to
+> stay architecturally compatible with reauth and upstream what makes sense.
 
-**Documentation**: <a href="https://frankie567.github.io/reauth/" target="_blank">https://frankie567.github.io/reauth/</a>
+## Architecture
 
-**Source Code**: <a href="https://github.com/frankie567/reauth" target="_blank">https://github.com/frankie567/reauth</a>
-
----
-
-> [!WARNING]
-> This is an early-stage project with many moving parts and mostly missing documentation. The API is not yet stable and breaking changes are expected.
-
-## Roadmap
-
-Our vision is to build a comprehensive, flexible authentication toolkit for Python that handles everything from low-level factor primitives to high-level OIDC server capabilities.
-
-### Short-term: Core Foundation
-
-- [ ] Factor primitives — building blocks for authentication factors
-    - [x] Email OTP
-    - [x] HOTP
-    - [x] TOTP
-    - [ ] Passwords
-    - [ ] Security keys
-    - [ ] Passkeys
-    - [ ] Social Login
-- [x] MFA authentication management — multi-factor authentication workflows
-
-### Mid-term: Integration Layer
-
-- [ ] Sessions management — robust session handling
-- [ ] ORM and web frameworks wrappers — seamless integration with popular frameworks
-
-### Long-term: Full Platform
-
-- [ ] OIDC server — complete OpenID Connect provider implementation
-- [ ] Team management — multi-user and organizational features
-- [ ] And more — expanding the ecosystem
-
-## Development
-
-### Setup environment
-
-We use [uv](https://docs.astral.sh/uv/) to manage the development environment and production build, and [just](https://github.com/casey/just) to manage command shortcuts. Ensure they are installed on your system.
-
-### Run unit tests
-
-You can run all the tests with:
-
-```bash
-just test
+```
+aegistry/
+├── crypto.py                  # opaque tokens + HMAC-SHA256 hash pairs
+├── amr.py                     # RFC 8176 Authentication Method References
+├── authentication_session.py  # pre-login MFA state machine (steps, AMR)
+├── session.py                 # post-login sessions (sliding expiration)
+├── factors/
+│   ├── password.py            # argon2id via pwdlib          [aegistry]
+│   ├── email_otp.py           # one-time codes by email
+│   ├── totp.py / hotp.py / backup_codes.py
+│   └── oauth2/
+│       ├── base.py            # OAuth2 authorization code + PKCE
+│       ├── oidc.py            # discovery, JWKS, id_token validation
+│       ├── google.py / github.py / apple.py
+│       └── line.py            # LINE Login v2.1               [aegistry]
+└── contrib/
+    ├── sqlalchemy/            # ready-made async stores        [aegistry]
+    └── fastapi/               # routers, dependencies, cookies [aegistry]
 ```
 
-### Format the code
+Design principles (inherited from reauth, shared with Better Auth):
 
-Execute the following command to apply linting and check typing:
+- **Framework-agnostic core.** Factors and services are plain async Python with
+  abstract persistence methods. `contrib/` packages depend on the core — never
+  the reverse.
+- **Tokens are opaque, prefixed, and stored hashed.** Only HMAC-SHA256 hashes
+  hit the database.
+- **MFA by construction.** Login is an *authentication session* that factors
+  advance step by step; it completes only when no required factor remains.
+- **PKCE + state + nonce** on every OAuth2/OIDC flow.
 
-```bash
-just lint
-```
-
-### Publish a new version
-
-You can bump the version, create a commit and associated tag with one command:
-
-```bash
-just version patch
-```
+## Installation
 
 ```bash
-just version minor
+pip install "aegistry[all]"            # everything
+pip install "aegistry[fastapi,sqlalchemy,password]"
 ```
 
-```bash
-just version major
-```
+## Status
 
-Your default Git text editor will open so you can add information about the release.
-
-When you push the tag on GitHub, the workflow will automatically publish it on PyPi and a GitHub release will be created as draft.
-
-## Serve the documentation
-
-You can serve the Mkdocs documentation with:
-
-```bash
-just docs-serve
-```
-
-It'll automatically watch for changes in your code.
+Early scaffold — APIs unstable. See upstream reauth for the core roadmap.
 
 ## License
 
-This project is licensed under the terms of the MIT license.
+MIT. Contains code from reauth, © 2026 François Voron, MIT licensed.

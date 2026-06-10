@@ -2,16 +2,16 @@ import abc
 import dataclasses
 import typing
 
-from reauth.amr import AuthenticationMethodReference
-from reauth.exceptions import ReauthException
-from reauth.factors.base import FactorBase
-from reauth.factors.oauth2.pkce import (
+from aegistry.amr import AuthenticationMethodReference
+from aegistry.exceptions import AegistryException
+from aegistry.factors.base import FactorBase
+from aegistry.factors.oauth2.pkce import (
     CodeChallengeMethod,
     generate_code_challenge,
     generate_code_verifier,
 )
-from reauth.factors.oauth2.state import OAuth2State, OAuth2StateService
-from reauth.logging import get_logger
+from aegistry.factors.oauth2.state import OAuth2State, OAuth2StateService
+from aegistry.logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -95,7 +95,7 @@ class OAuth2Enrollment:
         )
 
 
-class OAuth2Exception(ReauthException):
+class OAuth2Exception(AegistryException):
     """Base exception for OAuth2 errors."""
 
 

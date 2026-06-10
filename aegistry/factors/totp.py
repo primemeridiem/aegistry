@@ -10,10 +10,10 @@ from cryptography.hazmat.primitives.hashes import SHA1
 from cryptography.hazmat.primitives.twofactor import InvalidToken
 from cryptography.hazmat.primitives.twofactor.totp import TOTP as CryptoTOTP
 
-from reauth.amr import AuthenticationMethodReference
-from reauth.exceptions import ReauthException
-from reauth.factors.base import FactorBase
-from reauth.logging import get_logger
+from aegistry.amr import AuthenticationMethodReference
+from aegistry.exceptions import AegistryException
+from aegistry.factors.base import FactorBase
+from aegistry.logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -70,7 +70,7 @@ class TOTPEnrollment:
         return self._impl.get_provisioning_uri(account_name, issuer_name)
 
 
-class TOTPException(ReauthException):
+class TOTPException(AegistryException):
     """Base exception for TOTP errors."""
 
 

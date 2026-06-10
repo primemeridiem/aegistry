@@ -3,12 +3,12 @@ import dataclasses
 import datetime
 import typing
 
-from reauth.amr import AuthenticationMethodReference
-from reauth.crypto import TokenHash, generate_token_hash_pair, get_token_hash
-from reauth.exceptions import ReauthException
-from reauth.factors import FactorBase
-from reauth.logging import get_logger
-from reauth.timestamp import get_current_timestamp
+from aegistry.amr import AuthenticationMethodReference
+from aegistry.crypto import TokenHash, generate_token_hash_pair, get_token_hash
+from aegistry.exceptions import AegistryException
+from aegistry.factors import FactorBase
+from aegistry.logging import get_logger
+from aegistry.timestamp import get_current_timestamp
 
 logger = get_logger(__name__)
 
@@ -34,7 +34,7 @@ class AuthenticationSession:
         return get_current_timestamp() >= self.expires_at
 
 
-class AuthenticationSessionException(ReauthException):
+class AuthenticationSessionException(AegistryException):
     """Base exception for authentication session errors."""
 
 
@@ -80,7 +80,7 @@ class AuthenticationSessionService(abc.ABC):
         *,
         hash_secret: str,
         factors: set[FactorBase[typing.Any]],
-        token_prefix: str = "reauth_as_",
+        token_prefix: str = "aegistry_as_",
         lifetime: datetime.timedelta = datetime.timedelta(minutes=15),
     ) -> None:
         logger.debug(

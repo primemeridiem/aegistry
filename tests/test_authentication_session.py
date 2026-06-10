@@ -17,8 +17,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
-from reauth.amr import AuthenticationMethodReference
-from reauth.authentication_session import (
+from aegistry.amr import AuthenticationMethodReference
+from aegistry.authentication_session import (
     AuthenticationSession,
     AuthenticationSessionService,
     ExpiredSessionException,
@@ -27,9 +27,9 @@ from reauth.authentication_session import (
     InvalidSessionTokenException,
     UnavailableFactorException,
 )
-from reauth.crypto import generate_token_hash_pair, get_token_hash
-from reauth.factors import FactorBase
-from reauth.timestamp import get_current_timestamp
+from aegistry.crypto import generate_token_hash_pair, get_token_hash
+from aegistry.factors import FactorBase
+from aegistry.timestamp import get_current_timestamp
 
 sqlalchemy_meta = MetaData()
 authentication_session_table = Table(

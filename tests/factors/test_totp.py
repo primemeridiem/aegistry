@@ -18,7 +18,7 @@ from sqlalchemy import (
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 from sqlalchemy.sql.expression import update
 
-from reauth.factors.totp import (
+from aegistry.factors.totp import (
     AlreadyEnabledTOTPException,
     AlreadyEnrolledTOTPException,
     InvalidTOTPCodeException,
@@ -159,7 +159,7 @@ class TestTOTP:
             code_length=6,
             time_step=30,
         )
-        uri = totp.get_provisioning_uri("reauth@example.com", "Reauth Tests")
+        uri = totp.get_provisioning_uri("aegistry@example.com", "Aegistry Tests")
         assert uri.startswith("otpauth://totp/")
 
 

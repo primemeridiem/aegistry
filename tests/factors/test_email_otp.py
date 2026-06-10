@@ -14,15 +14,15 @@ from sqlalchemy import (
 )
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
-from reauth.crypto import generate_code_hash_pair, get_token_hash
-from reauth.factors.email_otp import (
+from aegistry.crypto import generate_code_hash_pair, get_token_hash
+from aegistry.factors.email_otp import (
     EmailOTP,
     EmailOTPEnrollment,
     EmailOTPFactor,
     ExpiredOTPException,
     InvalidOTPException,
 )
-from reauth.timestamp import get_current_timestamp
+from aegistry.timestamp import get_current_timestamp
 
 sqlalchemy_meta = MetaData()
 email_otp_table = Table(
@@ -54,7 +54,7 @@ class SQLAlchemyEmailOTPFactor(EmailOTPFactor):
     async def get_enrollment(self, identity_id: int) -> EmailOTPEnrollment | None:
         """Return a dummy enrollment for testing purposes."""
         return EmailOTPEnrollment(
-            id=None, identity_id=identity_id, email="reauth@example.com"
+            id=None, identity_id=identity_id, email="aegistry@example.com"
         )
 
     async def insert(self, email_otp: EmailOTP) -> int:
@@ -130,7 +130,7 @@ class TestEmailOTPCreate:
         identity_id = 123
         authentication_session_id = 456
         code, otp = await email_otp_factor.create(
-            "reauth@example.com",
+            "aegistry@example.com",
             authentication_session_id,
             identity_id=identity_id,
         )
@@ -141,7 +141,7 @@ class TestEmailOTPCreate:
         assert otp.id is not None
         assert otp.identity_id == identity_id
         assert otp.authentication_session_id == authentication_session_id
-        assert otp.email == "reauth@example.com"
+        assert otp.email == "aegistry@example.com"
         assert not otp.is_expired()
 
         code_hash = get_token_hash(code, secret=email_otp_factor.hash_secret)
@@ -153,13 +153,13 @@ class TestEmailOTPCreate:
         identity_id = 123
         authentication_session_id = 456
         first_code, first_otp = await email_otp_factor.create(
-            "reauth@example.com",
+            "aegistry@example.com",
             authentication_session_id,
             identity_id=identity_id,
         )
 
         second_code, second_otp = await email_otp_factor.create(
-            "reauth@example.com",
+            "aegistry@example.com",
             authentication_session_id,
             identity_id=identity_id,
         )
@@ -180,7 +180,7 @@ class TestEmailOTPCreate:
         identity_id = 123
         authentication_session_id = 456
         _, otp = await email_otp_factor.create(
-            "reauth@example.com",
+            "aegistry@example.com",
             authentication_session_id,
             identity_id=identity_id,
         )
@@ -192,7 +192,7 @@ class TestEmailOTPCreate:
         identity_id = 123
         authentication_session_id = 456
         code, _ = await email_otp_factor.create(
-            "reauth@example.com",
+            "aegistry@example.com",
             authentication_session_id,
             identity_id=identity_id,
         )
@@ -220,7 +220,7 @@ class TestEmailOTPConsume:
             expires_at=get_current_timestamp() + 3600,
             identity_id=identity_id,
             authentication_session_id=authentication_session_id,
-            email="reauth@example.com",
+            email="aegistry@example.com",
         )
         await email_otp_factor.insert(email_otp)
         with pytest.raises(InvalidOTPException):
@@ -238,7 +238,7 @@ class TestEmailOTPConsume:
             expires_at=0,  # Expired
             identity_id=identity_id,
             authentication_session_id=authentication_session_id,
-            email="reauth@example.com",
+            email="aegistry@example.com",
         )
         await email_otp_factor.insert(email_otp)
 
@@ -251,7 +251,7 @@ class TestEmailOTPConsume:
         code, code_hash = generate_code_hash_pair(secret=email_otp_factor.hash_secret)
         identity_id = 123
         authentication_session_id = 456
-        email = "reauth@example.com"
+        email = "aegistry@example.com"
         email_otp = EmailOTP(
             id=None,
             code_hash=code_hash,

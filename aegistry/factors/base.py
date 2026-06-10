@@ -1,8 +1,8 @@
 import abc
 import typing
 
-from reauth.amr import AuthenticationMethodReference
-from reauth.logging import get_logger
+from aegistry.amr import AuthenticationMethodReference
+from aegistry.logging import get_logger
 
 logger = get_logger(__name__)
 

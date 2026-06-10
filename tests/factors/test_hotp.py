@@ -17,7 +17,7 @@ from sqlalchemy import (
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 from sqlalchemy.sql.expression import update
 
-from reauth.factors.hotp import (
+from aegistry.factors.hotp import (
     AlreadyEnabledHOTPException,
     AlreadyEnrolledHOTPException,
     HOTPEnrollment,
@@ -146,7 +146,7 @@ class TestHOTP:
             code_length=6,
             counter=0,
         )
-        uri = hotp.get_provisioning_uri("reauth@example.com", "Reauth Tests")
+        uri = hotp.get_provisioning_uri("aegistry@example.com", "Aegistry Tests")
         assert uri.startswith("otpauth://hotp/")
 
 

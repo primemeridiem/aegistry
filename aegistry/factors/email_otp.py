@@ -4,12 +4,12 @@ import datetime
 import hashlib
 import typing
 
-from reauth.amr import AuthenticationMethodReference
-from reauth.crypto import generate_code_hash_pair, get_token_hash
-from reauth.exceptions import ReauthException
-from reauth.factors.base import FactorBase
-from reauth.logging import get_logger
-from reauth.timestamp import get_current_timestamp
+from aegistry.amr import AuthenticationMethodReference
+from aegistry.crypto import generate_code_hash_pair, get_token_hash
+from aegistry.exceptions import AegistryException
+from aegistry.factors.base import FactorBase
+from aegistry.logging import get_logger
+from aegistry.timestamp import get_current_timestamp
 
 logger = get_logger(__name__)
 
@@ -52,7 +52,7 @@ class EmailOTP:
         return get_current_timestamp() >= self.expires_at
 
 
-class EmailOTPException(ReauthException):
+class EmailOTPException(AegistryException):
     """Base exception for email OTP errors."""
 
 

@@ -11,7 +11,7 @@ from sqlalchemy import (
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 from sqlalchemy.sql.expression import delete, insert, select, update
 
-from reauth.factors.backup_codes import (
+from aegistry.factors.backup_codes import (
     AlreadyUsedBackupCodeException,
     BackupCodesEnrollment,
     BackupCodesFactor,

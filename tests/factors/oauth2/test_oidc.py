@@ -11,8 +11,8 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from reauth.crypto import TokenHash
-from reauth.factors.oauth2.base import (
+from aegistry.crypto import TokenHash
+from aegistry.factors.oauth2.base import (
     OAuth2Enrollment,
     OAuth2InvalidClientException,
     OAuth2InvalidGrantException,
@@ -21,15 +21,15 @@ from reauth.factors.oauth2.base import (
     OAuth2TokenUnauthorizedClientException,
     OAuth2TokenUnsupportedGrantTypeException,
 )
-from reauth.factors.oauth2.oidc import (
+from aegistry.factors.oauth2.oidc import (
     DiscoveryDocumentException,
     InvalidIDTokenException,
     JWKSFetchException,
     OIDCFactor,
     validate_id_token,
 )
-from reauth.factors.oauth2.state import OAuth2State
-from reauth.timestamp import get_current_timestamp
+from aegistry.factors.oauth2.state import OAuth2State
+from aegistry.timestamp import get_current_timestamp
 
 from .conftest import SQLAlchemyOAuth2StateService
 
@@ -488,13 +488,13 @@ class TestOIDCFactorGetAuthorizationURL:
         url = await oidc_factor.get_authorization_url(
             redirect_uri="https://example.com/callback",
             state="test-state",
-            extra={"prompt": "login", "login_hint": "reauth@example.com"},
+            extra={"prompt": "login", "login_hint": "aegistry@example.com"},
         )
         parsed = urllib.parse.urlparse(url)
         params = urllib.parse.parse_qs(parsed.query)
 
         assert params["prompt"] == ["login"]
-        assert params["login_hint"] == ["reauth@example.com"]
+        assert params["login_hint"] == ["aegistry@example.com"]
 
 
 @pytest.mark.anyio

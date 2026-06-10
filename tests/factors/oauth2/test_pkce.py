@@ -2,7 +2,7 @@ import re
 
 import pytest
 
-from reauth.factors.oauth2.pkce import (
+from aegistry.factors.oauth2.pkce import (
     CodeChallengeMethod,
     generate_code_challenge,
     generate_code_verifier,

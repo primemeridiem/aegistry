@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy import insert, select, update
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from reauth.factors.oauth2.base import (
+from aegistry.factors.oauth2.base import (
     OAuth2Account,
     OAuth2CallbackException,
     OAuth2Enrollment,
@@ -13,7 +13,7 @@ from reauth.factors.oauth2.base import (
     OAuth2MissingCodeException,
     TokenResponse,
 )
-from reauth.factors.oauth2.state import (
+from aegistry.factors.oauth2.state import (
     InvalidStateException,
     OAuth2State,
 )
@@ -124,7 +124,7 @@ class SQLAlchemyOAuth2Factor(OAuth2Factor):
         """Mock get_profile for testing - returns mock profile data."""
         return {
             "sub": "test-sub",
-            "email": "reauth@example.com",
+            "email": "aegistry@example.com",
             "name": "Test User",
         }
 
@@ -152,7 +152,7 @@ class TestOAuth2FactorStart:
         assert authorization_url.startswith("https://provider.example.com/auth?state=")
         assert isinstance(state_token, str)
         assert len(state_token) > 0
-        assert state_token.startswith("reauth_oauth2_")
+        assert state_token.startswith("aegistry_oauth2_")
         assert isinstance(oauth2_state, OAuth2State)
         assert oauth2_state.provider == "provider"
 

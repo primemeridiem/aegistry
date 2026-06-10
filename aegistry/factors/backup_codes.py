@@ -3,11 +3,11 @@ import dataclasses
 import secrets
 import typing
 
-from reauth.amr import AuthenticationMethodReference
-from reauth.crypto import get_token_hash
-from reauth.exceptions import ReauthException
-from reauth.factors.base import FactorBase
-from reauth.logging import get_logger
+from aegistry.amr import AuthenticationMethodReference
+from aegistry.crypto import get_token_hash
+from aegistry.exceptions import AegistryException
+from aegistry.factors.base import FactorBase
+from aegistry.logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -22,7 +22,7 @@ class BackupCodesEnrollment:
     used_codes_hashes: list[str]
 
 
-class BackupCodesException(ReauthException):
+class BackupCodesException(AegistryException):
     """Base exception for backup codes errors."""
 
 

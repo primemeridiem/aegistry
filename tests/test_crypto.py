@@ -1,8 +1,8 @@
-"""Tests for reauth.crypto module."""
+"""Tests for aegistry.crypto module."""
 
 import pytest
 
-from reauth.crypto import (
+from aegistry.crypto import (
     generate_code_hash_pair,
     generate_token,
     generate_token_hash_pair,

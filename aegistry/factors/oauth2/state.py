@@ -3,10 +3,10 @@ import dataclasses
 import datetime
 import typing
 
-from reauth.crypto import TokenHash, generate_token_hash_pair, get_token_hash
-from reauth.exceptions import ReauthException
-from reauth.logging import get_logger
-from reauth.timestamp import get_current_timestamp
+from aegistry.crypto import TokenHash, generate_token_hash_pair, get_token_hash
+from aegistry.exceptions import AegistryException
+from aegistry.logging import get_logger
+from aegistry.timestamp import get_current_timestamp
 
 logger = get_logger(__name__)
 
@@ -25,7 +25,7 @@ class OAuth2State:
     context: dict[str, typing.Any] | None = None
 
 
-class OAuth2StateException(ReauthException):
+class OAuth2StateException(AegistryException):
     """Base exception for OAuth2 state errors."""
 
 
@@ -49,7 +49,7 @@ class OAuth2StateService(abc.ABC):
         *,
         hash_secret: str,
         lifetime: datetime.timedelta = datetime.timedelta(minutes=10),
-        token_prefix: str = "reauth_oauth2_",
+        token_prefix: str = "aegistry_oauth2_",
     ) -> None:
         self.hash_secret = hash_secret
         self.lifetime = lifetime

@@ -4,9 +4,9 @@ import typing
 
 import jwt
 
-from reauth.factors.oauth2.oidc import OIDCExtraParams, OIDCFactorBase
-from reauth.factors.oauth2.pkce import CodeChallengeMethod
-from reauth.factors.oauth2.state import OAuth2StateService
+from aegistry.factors.oauth2.oidc import OIDCExtraParams, OIDCFactorBase
+from aegistry.factors.oauth2.pkce import CodeChallengeMethod
+from aegistry.factors.oauth2.state import OAuth2StateService
 
 
 class AppleOAuth2Factor(OIDCFactorBase, abc.ABC):

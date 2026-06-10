@@ -1,7 +1,7 @@
 import abc
 
-from reauth.factors.oauth2.oidc import OIDCFactor
-from reauth.factors.oauth2.state import OAuth2StateService
+from aegistry.factors.oauth2.oidc import OIDCFactor
+from aegistry.factors.oauth2.state import OAuth2StateService
 
 
 class GoogleOAuth2Factor(OIDCFactor, abc.ABC):
