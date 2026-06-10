@@ -13,6 +13,7 @@ from aegistry.contrib.fastapi import (
     build_current_identity_id,
     get_oauth2_login_router,
     get_password_router,
+    get_session_router,
 )
 from aegistry.factors.base import FactorBase
 from aegistry.factors.oauth2.base import (
@@ -201,6 +202,13 @@ def app_and_services() -> tuple[FastAPI, dict[str, typing.Any]]:
         ),
         prefix="/auth",
     )
+    app.include_router(
+        get_session_router(
+            session_service_dependency=lambda: session_service,
+            config=config,
+        ),
+        prefix="/auth",
+    )
 
     current_identity_id = build_current_identity_id(lambda: session_service, config)
 
@@ -225,6 +233,39 @@ def app_and_services() -> tuple[FastAPI, dict[str, typing.Any]]:
 def client(app_and_services: tuple[FastAPI, dict[str, typing.Any]]) -> TestClient:
     app, _ = app_and_services
     return TestClient(app)
+
+
+class TestSessionRouter:
+    def test_anonymous(self, client: TestClient) -> None:
+        response = client.get("/auth/session")
+        assert response.status_code == 401
+
+    def test_authenticated(self, client: TestClient) -> None:
+        client.post(
+            "/auth/register",
+            json={"email": "user@example.com", "password": "herminetincture"},
+        )
+
+        response = client.get("/auth/session")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["identity_id"] == 1
+        assert json["amr"] == ["pwd"]
+        assert json["expires_at"] > 0
+
+    def test_after_logout(self, client: TestClient) -> None:
+        client.post(
+            "/auth/register",
+            json={"email": "user@example.com", "password": "herminetincture"},
+        )
+
+        response = client.post("/auth/logout")
+        assert response.status_code == 204
+
+        client.cookies.clear()
+        response = client.get("/auth/session")
+        assert response.status_code == 401
 
 
 class TestPasswordRouter:

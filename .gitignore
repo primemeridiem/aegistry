@@ -5,3 +5,5 @@ dist/
 .coverage
 .pytest_cache/
 .ruff_cache/
+node_modules/
+clients/packages/*/dist/

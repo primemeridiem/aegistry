@@ -35,7 +35,13 @@ aegistry/
 └── contrib/
     ├── sqlalchemy/            # ready-made async stores        [aegistry]
     └── fastapi/               # routers, dependencies, cookies [aegistry]
+
+clients/                       # TypeScript SDK (pnpm workspace) [aegistry]
+├── packages/client            # @aegistry/client — core, getServerSession
+└── packages/react             # @aegistry/react — useSession()
 ```
+
+For the Next.js/React side, see [clients/README.md](clients/README.md).
 
 Design principles (inherited from reauth, shared with Better Auth):
 

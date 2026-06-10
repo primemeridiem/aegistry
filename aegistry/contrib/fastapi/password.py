@@ -4,7 +4,9 @@ Produces::
 
     POST /login    {"email": ..., "password": ...}
     POST /register {"email": ..., "password": ...}   (optional)
-    POST /logout
+
+Logout and session introspection live in the session router
+(:func:`~aegistry.contrib.fastapi.session.get_session_router`).
 
 Login responses:
     200 {"status": "complete"} with the session cookie set, or
@@ -17,16 +19,15 @@ Login responses:
 import typing
 from collections.abc import Awaitable, Callable
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel, EmailStr
 
 from aegistry.authentication_session import AuthenticationSessionService
 from aegistry.contrib.fastapi import cookies
 from aegistry.contrib.fastapi.config import AuthConfig, IdentityResolver
-from aegistry.contrib.fastapi.dependencies import build_current_session
 from aegistry.contrib.fastapi.flow import advance_and_complete
 from aegistry.factors.password import PasswordFactor
-from aegistry.session import Session, SessionService
+from aegistry.session import SessionService
 
 
 class PasswordCredentials(BaseModel):
@@ -177,20 +178,5 @@ def get_password_router(
             return LoginResponse(
                 status="mfa_required", factors=result.remaining_factors
             )
-
-    optional_session = build_current_session(
-        session_service_dependency, config, auto_error=False
-    )
-
-    @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
-    async def _logout(
-        request: Request,
-        response: Response,
-        session: Session | None = Depends(optional_session),
-        session_service: SessionService = Depends(session_service_dependency),
-    ) -> None:
-        if session is not None:
-            await session_service.revoke(session)
-        cookies.clear_session_cookie(response, config)
 
     return router

@@ -1,0 +1,26 @@
+{
+  "name": "@aegistry/client",
+  "version": "0.1.0",
+  "description": "Framework-agnostic TypeScript client for aegistry FastAPI auth",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "nanostores": "^1.0.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0"
+  }
+}
