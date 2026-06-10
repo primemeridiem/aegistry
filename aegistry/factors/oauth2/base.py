@@ -356,7 +356,7 @@ class OAuth2Factor[EXTRA](FactorBase[OAuth2Enrollment], abc.ABC):
             OAuth2TemporarilyUnavailableException: RFC 6749 auth error: temporarily_unavailable.
             OAuth2TokenExchangeException: If token exchange fails (see exchange_code).
             OAuth2IdentityMismatchException: If state identity does not match existing enrollment.
-        """  # noqa: DOC502
+        """
         logger.debug("OAuth2 callback attempted", extra={"provider": self.identifier})
         # Step 1: Consume the state first (validates and deletes atomically)
         oauth2_state = await self.state_service.consume(state)

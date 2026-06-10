@@ -55,6 +55,55 @@ pip install "aegistry[all]"            # everything
 pip install "aegistry[fastapi,sqlalchemy,password]"
 ```
 
+## Quickstart (FastAPI + SQLAlchemy)
+
+```python
+from aegistry.contrib.fastapi import AuthConfig, get_password_router, get_oauth2_login_router
+from aegistry.contrib.sqlalchemy import create_tables
+
+config = AuthConfig(success_redirect_url="/app")
+tables = create_tables(metadata)  # or define your own tables/stores
+
+app.include_router(
+    get_password_router(
+        factor_dependency=get_password_factor,
+        authentication_session_service_dependency=get_authentication_session_service,
+        session_service_dependency=get_session_service,
+        identity_resolver_dependency=get_identity_resolver,
+        config=config,
+    ),
+    prefix="/auth",
+)
+app.include_router(
+    get_oauth2_login_router(
+        identifier="google",
+        factor_dependency=get_google_factor,
+        authentication_session_service_dependency=get_authentication_session_service,
+        session_service_dependency=get_session_service,
+        identity_resolver_dependency=get_identity_resolver,
+        scope=["openid", "email", "profile"],
+        config=config,
+    ),
+    prefix="/auth",
+)
+```
+
+Your app provides the *dependencies* (wired to your database session) and an
+``IdentityResolver`` mapping verified emails to your user rows; aegistry
+provides the flows. See ``tests/contrib/test_fastapi_routers.py`` for a
+complete, runnable wiring.
+
+### Provider notes
+
+- **Google** — pure OIDC; `GoogleOAuth2Factor` validates id_tokens against
+  Google's JWKS. Email arrives with `email_verified`.
+- **LINE** — `LineOAuth2Factor` validates id_tokens through LINE's verify
+  endpoint (web-login tokens are HS256-signed with the channel secret, so
+  JWKS validation can't be used). The `email` scope requires applying for
+  permission in the LINE Developers console, and LINE never returns
+  `email_verified` — don't auto-link LINE accounts to existing users by
+  email without an extra verification step.
+
 ## Status
 
 Early scaffold — APIs unstable. See upstream reauth for the core roadmap.

@@ -484,7 +484,7 @@ class OIDCFactorBase(OAuth2Factor[OIDCExtraParams], abc.ABC):
 
         Raises:
             InvalidIDTokenException: If the token is invalid.
-        """  # noqa: DOC502
+        """
         discovery_document = await self._get_discovery_document()
         issuer = discovery_document["issuer"]
         id_token_signing_alg_values_supported = discovery_document[

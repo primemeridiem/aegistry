@@ -22,7 +22,7 @@ dependencies = [
 [project.optional-dependencies]
 password = ["pwdlib[argon2]>=0.2.1"]
 sqlalchemy = ["sqlalchemy[asyncio]>=2.0.30"]
-fastapi = ["fastapi>=0.115.0"]
+fastapi = ["fastapi>=0.115.0", "email-validator>=2.0"]
 all = ["aegistry[password,sqlalchemy,fastapi]"]
 
 [build-system]
@@ -41,7 +41,8 @@ dev = [
     "aiosqlite>=0.22.1",
     "pwdlib[argon2]>=0.2.1",
     "fastapi>=0.115.0",
-    "respx>=0.22.0",
+    "email-validator>=2.0",
+    "httpx>=0.28.1",
 ]
 
 [tool.ruff]
@@ -50,7 +51,11 @@ target-version = "py312"
 [tool.ruff.lint]
 preview = true
 extend-select = ["I", "TRY", "UP", "B904", "TRY003"]
-per-file-ignores = { "tests/**" = ["TRY"] }
+per-file-ignores = { "tests/**" = [
+    "TRY",
+], "aegistry/contrib/fastapi/**" = [
+    "B008", # Depends() in argument defaults is the FastAPI idiom
+] }
 
 [tool.pytest.ini_options]
 addopts = "--cov=aegistry/ --cov-report=term-missing"
