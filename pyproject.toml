@@ -1,0 +1,53 @@
+
+[project]
+name = "reauth"
+authors = [{ name = "reauth", email = "hello@fvoron.com" }]
+description = "The authentication toolkit for Python"
+readme = "README.md"
+dynamic = ["version"]
+classifiers = [
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.14",
+]
+requires-python = ">=3.14"
+dependencies = ["anyio", "cryptography>=48.0.0,<49.0.0", "httpx>=0.28.1", "pyjwt>=2.12.1"]
+
+[project.urls]
+Documentation = "https://frankie567.github.io/reauth/"
+Source = "https://github.com/frankie567/reauth"
+
+[build-system]
+requires = ["hatchling", "hatch-regex-commit"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "regex_commit"
+commit_extra_args = ["-e"]
+path = "reauth/__init__.py"
+
+[dependency-groups]
+dev = [
+    "ty",
+    "ruff",
+    "pytest",
+    "pytest-cov",
+    "mkdocs-material",
+    "mkdocstrings[python]",
+    "sqlalchemy[asyncio]>=2.0.49",
+    "aiosqlite>=0.22.1",
+]
+
+[tool.ruff]
+target-version = "py314"
+
+[tool.ruff.lint]
+preview = true
+extend-select = ["I", "TRY", "UP", "DOC", "B904", "TRY003"]
+per-file-ignores = { "tests/**" = ["DOC"] }
+
+[tool.pytest.ini_options]
+addopts = "--cov=reauth/ --cov-report=term-missing"
+
+
+[tool.uv]
+default-groups = ["dev"]
