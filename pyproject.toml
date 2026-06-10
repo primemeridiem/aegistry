@@ -25,6 +25,9 @@ sqlalchemy = ["sqlalchemy[asyncio]>=2.0.30"]
 fastapi = ["fastapi>=0.115.0", "email-validator>=2.0"]
 all = ["aegistry[password,sqlalchemy,fastapi]"]
 
+[project.urls]
+Source = "https://github.com/primemeridiem/aegistry"
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
