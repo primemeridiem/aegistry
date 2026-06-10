@@ -377,6 +377,53 @@ class TestOAuth2Router:
         assert response.status_code == 303
         assert response.headers["location"].startswith("/auth/error")
 
+    def test_default_redirect_uri_from_request(
+        self,
+        client: TestClient,
+        app_and_services: tuple[FastAPI, dict[str, typing.Any]],
+    ) -> None:
+        _, services = app_and_services
+        client.get("/auth/fake/authorize", follow_redirects=False)
+
+        states = list(services["oauth2_factor"].state_service.storage.values())
+        assert len(states) == 1
+        assert states[0].redirect_uri == "http://testserver/auth/fake/callback"
+
+    def test_callback_base_url(self) -> None:
+        state_service = InMemoryOAuth2StateService()
+        oauth2_factor = FakeOAuth2Factor(state_service)
+        authentication_session_service = InMemoryAuthenticationSessionService(
+            factors={oauth2_factor}
+        )
+        session_service = InMemorySessionService()
+        identity_resolver = InMemoryIdentityResolver()
+        config = AuthConfig(cookie_secure=False)
+
+        app = FastAPI()
+        app.include_router(
+            get_oauth2_login_router(
+                identifier="fake",
+                factor_dependency=lambda: oauth2_factor,
+                authentication_session_service_dependency=(
+                    lambda: authentication_session_service
+                ),
+                session_service_dependency=lambda: session_service,
+                identity_resolver_dependency=lambda: identity_resolver,
+                config=config,
+                callback_base_url="https://app.example.com/api/auth",
+            ),
+            prefix="/auth",
+        )
+        client = TestClient(app)
+
+        client.get("/auth/fake/authorize", follow_redirects=False)
+
+        states = list(state_service.storage.values())
+        assert len(states) == 1
+        assert (
+            states[0].redirect_uri == "https://app.example.com/api/auth/fake/callback"
+        )
+
     def test_existing_enrollment_reuses_identity(self, client: TestClient) -> None:
         # First login creates the identity and enrollment
         response = client.get("/auth/fake/authorize", follow_redirects=False)

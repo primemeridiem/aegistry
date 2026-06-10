@@ -7,3 +7,5 @@ dist/
 .ruff_cache/
 node_modules/
 clients/packages/*/dist/
+.next/
+demo.db

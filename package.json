@@ -1,5 +1,5 @@
 {
-  "name": "aegistry-clients",
+  "name": "aegistry-monorepo",
   "private": true,
   "scripts": {
     "build": "pnpm -r build",

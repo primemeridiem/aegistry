@@ -46,6 +46,7 @@ dev = [
     "fastapi>=0.115.0",
     "email-validator>=2.0",
     "httpx>=0.28.1",
+    "uvicorn>=0.30.0",
 ]
 
 [tool.ruff]
@@ -58,6 +59,9 @@ per-file-ignores = { "tests/**" = [
     "TRY",
 ], "aegistry/contrib/fastapi/**" = [
     "B008", # Depends() in argument defaults is the FastAPI idiom
+], "examples/**" = [
+    "B008",
+    "TRY003",
 ] }
 
 [tool.pytest.ini_options]

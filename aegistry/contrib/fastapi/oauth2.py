@@ -71,6 +71,7 @@ def get_oauth2_login_router(
     config: AuthConfig,
     scope: list[str] | None = None,
     callback_method: typing.Literal["GET", "POST"] = "GET",
+    callback_base_url: str | None = None,
 ) -> APIRouter:
     """Build a login router for one OAuth2/OIDC provider.
 
@@ -89,6 +90,12 @@ def get_oauth2_login_router(
         scope: Scopes to request; the OIDC factor adds ``openid`` itself.
         callback_method: HTTP method of the provider callback. Use "POST"
             for providers using ``response_mode=form_post`` (e.g. Apple).
+        callback_base_url: Base URL used to build the provider redirect_uri,
+            producing ``{callback_base_url}/{identifier}/callback``. Required
+            when the routes are served behind a same-origin proxy (e.g. a
+            Next.js rewrite), where ``request.url_for()`` would generate the
+            backend host instead of the public one. Defaults to deriving the
+            redirect_uri from the incoming request.
 
     Returns:
         A FastAPI APIRouter with the authorize and callback routes.
@@ -129,7 +136,10 @@ def get_oauth2_login_router(
         if factor.identifier not in {f.identifier for f in available_factors}:
             return _error_redirect(config, "factor_not_available")
 
-        redirect_uri = str(request.url_for(f"aegistry.{identifier}.callback"))
+        if callback_base_url is not None:
+            redirect_uri = f"{callback_base_url.rstrip('/')}/{identifier}/callback"
+        else:
+            redirect_uri = str(request.url_for(f"aegistry.{identifier}.callback"))
         try:
             authorization_url, state, oauth2_state = await factor.start(
                 redirect_uri=redirect_uri,
