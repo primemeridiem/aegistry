@@ -63,6 +63,7 @@ export default async function Home() {
 							<dd>{new Date(session.expires_at * 1000).toLocaleString()}</dd>
 						</dl>
 						<ChangePasswordForm
+							hasPassword={me?.has_password ?? false}
 							recoveredViaEmail={session.amr.includes("email")}
 						/>
 					</CardContent>

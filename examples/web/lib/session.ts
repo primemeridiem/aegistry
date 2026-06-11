@@ -16,6 +16,7 @@ export interface Me {
 	email: string;
 	name: string | null;
 	picture_url: string | null;
+	has_password: boolean;
 }
 
 /** Server-side user lookup against the demo's app-level /auth/me endpoint. */

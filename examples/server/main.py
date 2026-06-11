@@ -393,6 +393,7 @@ class Me(BaseModel):
     email: str
     name: str | None
     picture_url: str | None
+    has_password: bool
 
 
 _current_session = build_current_session(get_session_service, config, auto_error=True)
@@ -411,4 +412,10 @@ async def me(
     row = result.fetchone()
     if row is None:
         raise HTTPException(status_code=404)
-    return Me(**row._asdict())
+    enrollment_result = await connection.execute(
+        select(tables.password_enrollments.c.id).where(
+            tables.password_enrollments.c.identity_id == session.identity_id
+        )
+    )
+    has_password = enrollment_result.fetchone() is not None
+    return Me(**row._asdict(), has_password=has_password)
