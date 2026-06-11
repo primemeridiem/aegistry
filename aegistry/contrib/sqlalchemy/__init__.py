@@ -2,6 +2,7 @@
 
 from aegistry.contrib.sqlalchemy.stores import (
     SQLAlchemyAuthenticationSessionService,
+    SQLAlchemyEmailOTPFactorPersistence,
     SQLAlchemyExecutor,
     SQLAlchemyOAuth2FactorPersistence,
     SQLAlchemyOAuth2StateService,
@@ -13,6 +14,7 @@ from aegistry.contrib.sqlalchemy.tables import AegistryTables, create_tables
 __all__ = [
     "AegistryTables",
     "SQLAlchemyAuthenticationSessionService",
+    "SQLAlchemyEmailOTPFactorPersistence",
     "SQLAlchemyExecutor",
     "SQLAlchemyOAuth2FactorPersistence",
     "SQLAlchemyOAuth2StateService",

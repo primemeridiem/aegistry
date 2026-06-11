@@ -11,11 +11,13 @@ from aegistry.authentication_session import (
 from aegistry.contrib.fastapi import (
     AuthConfig,
     build_current_identity_id,
+    get_email_otp_router,
     get_oauth2_login_router,
     get_password_router,
     get_session_router,
 )
 from aegistry.factors.base import FactorBase
+from aegistry.factors.email_otp import EmailOTP, EmailOTPEnrollment, EmailOTPFactor
 from aegistry.factors.oauth2.base import (
     OAuth2Enrollment,
     OAuth2Factor,
@@ -164,16 +166,73 @@ class InMemoryIdentityResolver:
         return self.users[email]
 
 
+class InMemoryEmailOTPFactor(EmailOTPFactor):
+    def __init__(self, resolver: InMemoryIdentityResolver) -> None:
+        self.resolver = resolver
+        self.storage: dict[int, EmailOTP] = {}
+        self._id = 0
+        super().__init__(hash_secret="test-secret")
+
+    async def get_enrollment(
+        self, identity_id: typing.Any
+    ) -> EmailOTPEnrollment | None:
+        for email, id_ in self.resolver.users.items():
+            if id_ == identity_id:
+                return EmailOTPEnrollment(
+                    id=identity_id, identity_id=identity_id, email=email
+                )
+        return None
+
+    async def insert(self, email_otp: EmailOTP) -> int:
+        self._id += 1
+        self.storage[self._id] = email_otp
+        return self._id
+
+    async def get_by_code_hash_and_authentication_session_id(
+        self, code_hash: str, authentication_session_id: typing.Any
+    ) -> EmailOTP | None:
+        for email_otp in self.storage.values():
+            if (
+                email_otp.code_hash == code_hash
+                and email_otp.authentication_session_id == authentication_session_id
+            ):
+                return email_otp
+        return None
+
+    async def delete(self, email_otp: EmailOTP) -> None:
+        assert email_otp.id is not None
+        del self.storage[email_otp.id]
+
+    async def delete_by_authentication_session_id(
+        self, authentication_session_id: typing.Any
+    ) -> None:
+        self.storage = {
+            id_: email_otp
+            for id_, email_otp in self.storage.items()
+            if email_otp.authentication_session_id != authentication_session_id
+        }
+
+
+class CaptureEmailSender:
+    def __init__(self) -> None:
+        self.sent: list[tuple[str, str]] = []
+
+    async def send_code(self, email: str, code: str) -> None:
+        self.sent.append((email, code))
+
+
 @pytest.fixture
 def app_and_services() -> tuple[FastAPI, dict[str, typing.Any]]:
     password_factor = InMemoryPasswordFactor()
     state_service = InMemoryOAuth2StateService()
     oauth2_factor = FakeOAuth2Factor(state_service)
+    identity_resolver = InMemoryIdentityResolver()
+    email_otp_factor = InMemoryEmailOTPFactor(identity_resolver)
+    email_sender = CaptureEmailSender()
     authentication_session_service = InMemoryAuthenticationSessionService(
-        factors={password_factor, oauth2_factor}
+        factors={password_factor, oauth2_factor, email_otp_factor}
     )
     session_service = InMemorySessionService()
-    identity_resolver = InMemoryIdentityResolver()
     config = AuthConfig(cookie_secure=False)
 
     app = FastAPI()
@@ -209,6 +268,19 @@ def app_and_services() -> tuple[FastAPI, dict[str, typing.Any]]:
         ),
         prefix="/auth",
     )
+    app.include_router(
+        get_email_otp_router(
+            factor_dependency=lambda: email_otp_factor,
+            authentication_session_service_dependency=(
+                lambda: authentication_session_service
+            ),
+            session_service_dependency=lambda: session_service,
+            identity_resolver_dependency=lambda: identity_resolver,
+            email_sender_dependency=lambda: email_sender,
+            config=config,
+        ),
+        prefix="/auth",
+    )
 
     current_identity_id = build_current_identity_id(lambda: session_service, config)
 
@@ -221,6 +293,8 @@ def app_and_services() -> tuple[FastAPI, dict[str, typing.Any]]:
     services = {
         "password_factor": password_factor,
         "oauth2_factor": oauth2_factor,
+        "email_otp_factor": email_otp_factor,
+        "email_sender": email_sender,
         "authentication_session_service": authentication_session_service,
         "session_service": session_service,
         "identity_resolver": identity_resolver,
@@ -438,3 +512,215 @@ class TestOAuth2Router:
 
         response = client.get("/me")
         assert response.json() == {"identity_id": 1}
+
+
+class TestEmailOTPRouter:
+    def test_signup_via_otp(
+        self,
+        client: TestClient,
+        app_and_services: tuple[FastAPI, dict[str, typing.Any]],
+    ) -> None:
+        _, services = app_and_services
+        sender: CaptureEmailSender = services["email_sender"]
+
+        response = client.post(
+            "/auth/email-otp/request", json={"email": "new@example.com"}
+        )
+        assert response.status_code == 202
+        assert "aegistry_auth_session" in response.cookies
+        assert len(sender.sent) == 1
+        email, code = sender.sent[0]
+        assert email == "new@example.com"
+
+        response = client.post("/auth/email-otp/verify", json={"code": code})
+        assert response.status_code == 200
+        assert response.json()["status"] == "complete"
+
+        response = client.get("/auth/session")
+        assert response.status_code == 200
+        json = response.json()
+        # Identity was created on verify (signup with verified email)
+        assert json["identity_id"] == 1
+        assert json["amr"] == ["email"]
+
+    def test_existing_user_login(
+        self,
+        client: TestClient,
+        app_and_services: tuple[FastAPI, dict[str, typing.Any]],
+    ) -> None:
+        _, services = app_and_services
+        sender: CaptureEmailSender = services["email_sender"]
+        client.post(
+            "/auth/register",
+            json={"email": "user@example.com", "password": "herminetincture"},
+        )
+        client.post("/auth/logout")
+        client.cookies.clear()
+
+        client.post("/auth/email-otp/request", json={"email": "user@example.com"})
+        _, code = sender.sent[-1]
+        response = client.post("/auth/email-otp/verify", json={"code": code})
+
+        assert response.json()["status"] == "complete"
+        assert client.get("/auth/session").json()["identity_id"] == 1
+
+    def test_same_response_for_unknown_email(self, client: TestClient) -> None:
+        response = client.post(
+            "/auth/email-otp/request", json={"email": "nobody@example.com"}
+        )
+        assert response.status_code == 202
+
+    def test_invalid_code(self, client: TestClient) -> None:
+        client.post("/auth/email-otp/request", json={"email": "x@example.com"})
+
+        response = client.post("/auth/email-otp/verify", json={"code": "WRONG1"})
+
+        assert response.status_code == 401
+        assert response.json() == {"detail": "invalid_code"}
+
+    def test_verify_without_request(self, client: TestClient) -> None:
+        response = client.post("/auth/email-otp/verify", json={"code": "ABC123"})
+        assert response.status_code == 401
+
+    def test_code_single_use(
+        self,
+        client: TestClient,
+        app_and_services: tuple[FastAPI, dict[str, typing.Any]],
+    ) -> None:
+        _, services = app_and_services
+        sender: CaptureEmailSender = services["email_sender"]
+        client.post("/auth/email-otp/request", json={"email": "x@example.com"})
+        _, code = sender.sent[-1]
+
+        first = client.post("/auth/email-otp/verify", json={"code": code})
+        assert first.status_code == 200
+
+        # The authentication session was completed; replaying the code fails.
+        response = client.post("/auth/email-otp/verify", json={"code": code})
+        assert response.status_code == 401
+
+
+class TestChangePassword:
+    def test_requires_authentication(self, client: TestClient) -> None:
+        response = client.post(
+            "/auth/change-password", json={"new_password": "newpassword1"}
+        )
+        assert response.status_code == 401
+
+    def test_with_current_password(self, client: TestClient) -> None:
+        client.post(
+            "/auth/register",
+            json={"email": "user@example.com", "password": "herminetincture"},
+        )
+        old_session_cookie = client.cookies["aegistry_session"]
+
+        response = client.post(
+            "/auth/change-password",
+            json={
+                "new_password": "newpassword1",
+                "current_password": "herminetincture",
+            },
+        )
+        assert response.status_code == 204
+        # A fresh session cookie was issued; the old one is revoked.
+        assert client.cookies["aegistry_session"] != old_session_cookie
+        assert client.get("/auth/session").status_code == 200
+
+        client.cookies.set("aegistry_session", old_session_cookie)
+        assert client.get("/auth/session").status_code == 401
+
+    def test_wrong_current_password(self, client: TestClient) -> None:
+        client.post(
+            "/auth/register",
+            json={"email": "user@example.com", "password": "herminetincture"},
+        )
+
+        response = client.post(
+            "/auth/change-password",
+            json={"new_password": "newpassword1", "current_password": "wrong"},
+        )
+
+        assert response.status_code == 403
+        assert response.json() == {"detail": "invalid_current_password"}
+
+    def test_password_session_requires_current_password(
+        self, client: TestClient
+    ) -> None:
+        client.post(
+            "/auth/register",
+            json={"email": "user@example.com", "password": "herminetincture"},
+        )
+
+        response = client.post(
+            "/auth/change-password", json={"new_password": "newpassword1"}
+        )
+
+        assert response.status_code == 403
+        assert response.json() == {"detail": "current_password_required"}
+
+    def test_forgot_password_recovery_flow(
+        self,
+        client: TestClient,
+        app_and_services: tuple[FastAPI, dict[str, typing.Any]],
+    ) -> None:
+        _, services = app_and_services
+        sender: CaptureEmailSender = services["email_sender"]
+
+        # User has a password but forgot it
+        client.post(
+            "/auth/register",
+            json={"email": "user@example.com", "password": "forgotten1"},
+        )
+        client.post("/auth/logout")
+        client.cookies.clear()
+
+        # Prove email ownership via OTP (amr: email)
+        client.post("/auth/email-otp/request", json={"email": "user@example.com"})
+        _, code = sender.sent[-1]
+        client.post("/auth/email-otp/verify", json={"code": code})
+        assert client.get("/auth/session").json()["amr"] == ["email"]
+
+        # Set a new password without knowing the old one
+        response = client.post(
+            "/auth/change-password", json={"new_password": "newpassword1"}
+        )
+        assert response.status_code == 204
+
+        # Old password dead, new password works
+        client.cookies.clear()
+        old = client.post(
+            "/auth/login",
+            json={"email": "user@example.com", "password": "forgotten1"},
+        )
+        assert old.status_code == 401
+        new = client.post(
+            "/auth/login",
+            json={"email": "user@example.com", "password": "newpassword1"},
+        )
+        assert new.status_code == 200
+        assert new.json()["status"] == "complete"
+
+    def test_set_first_password_after_otp_signup(
+        self,
+        client: TestClient,
+        app_and_services: tuple[FastAPI, dict[str, typing.Any]],
+    ) -> None:
+        _, services = app_and_services
+        sender: CaptureEmailSender = services["email_sender"]
+
+        # Sign up via OTP only (no password enrolled)
+        client.post("/auth/email-otp/request", json={"email": "otp@example.com"})
+        _, code = sender.sent[-1]
+        client.post("/auth/email-otp/verify", json={"code": code})
+
+        response = client.post(
+            "/auth/change-password", json={"new_password": "firstpassword1"}
+        )
+        assert response.status_code == 204
+
+        client.cookies.clear()
+        response = client.post(
+            "/auth/login",
+            json={"email": "otp@example.com", "password": "firstpassword1"},
+        )
+        assert response.status_code == 200

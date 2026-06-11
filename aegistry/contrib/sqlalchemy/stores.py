@@ -17,6 +17,7 @@ from aegistry.authentication_session import (
 )
 from aegistry.crypto import TokenHash
 from aegistry.factors import FactorBase
+from aegistry.factors.email_otp import EmailOTP
 from aegistry.factors.oauth2.base import OAuth2Enrollment
 from aegistry.factors.oauth2.state import OAuth2State, OAuth2StateService
 from aegistry.factors.password import PasswordEnrollment
@@ -315,3 +316,54 @@ class SQLAlchemyPasswordFactorPersistence:
     async def delete(self, enrollment: PasswordEnrollment) -> None:
         table = self.password_enrollments_table
         await self.executor.execute(delete(table).where(table.c.id == enrollment.id))
+
+
+class SQLAlchemyEmailOTPFactorPersistence:
+    """Mixin implementing email OTP persistence against SQLAlchemy.
+
+    Mix into ``EmailOTPFactor`` and set ``executor`` and
+    ``email_otps_table`` in the constructor. ``get_enrollment`` stays
+    abstract: it maps an identity to its email, which lives in the
+    application's user table.
+    """
+
+    executor: SQLAlchemyExecutor
+    email_otps_table: Table
+
+    async def insert(self, email_otp: EmailOTP) -> typing.Any:
+        table = self.email_otps_table
+        values = dict(email_otp.__dict__)
+        values.pop("id")
+        result = await self.executor.execute(
+            insert(table).values(**values).returning(table.c.id)
+        )
+        return result.scalar_one()
+
+    async def get_by_code_hash_and_authentication_session_id(
+        self, code_hash: str, authentication_session_id: typing.Any
+    ) -> EmailOTP | None:
+        table = self.email_otps_table
+        result = await self.executor.execute(
+            select(table).where(
+                table.c.code_hash == code_hash,
+                table.c.authentication_session_id == authentication_session_id,
+            )
+        )
+        row = result.fetchone()
+        if row is None:
+            return None
+        return EmailOTP(**row._asdict())
+
+    async def delete(self, email_otp: EmailOTP) -> None:
+        table = self.email_otps_table
+        await self.executor.execute(delete(table).where(table.c.id == email_otp.id))
+
+    async def delete_by_authentication_session_id(
+        self, authentication_session_id: typing.Any
+    ) -> None:
+        table = self.email_otps_table
+        await self.executor.execute(
+            delete(table).where(
+                table.c.authentication_session_id == authentication_session_id
+            )
+        )

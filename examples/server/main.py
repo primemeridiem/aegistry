@@ -28,12 +28,14 @@ from sqlalchemy.ext.asyncio import AsyncConnection, create_async_engine
 
 from aegistry.contrib.fastapi import (
     AuthConfig,
+    get_email_otp_router,
     get_oauth2_login_router,
     get_password_router,
     get_session_router,
 )
 from aegistry.contrib.sqlalchemy import (
     SQLAlchemyAuthenticationSessionService,
+    SQLAlchemyEmailOTPFactorPersistence,
     SQLAlchemyOAuth2FactorPersistence,
     SQLAlchemyOAuth2StateService,
     SQLAlchemyPasswordFactorPersistence,
@@ -41,6 +43,7 @@ from aegistry.contrib.sqlalchemy import (
     create_tables,
 )
 from aegistry.factors.base import FactorBase
+from aegistry.factors.email_otp import EmailOTPEnrollment, EmailOTPFactor
 from aegistry.factors.oauth2.google import GoogleOAuth2Factor
 from aegistry.factors.oauth2.line import LineOAuth2Factor
 from aegistry.factors.oauth2.state import OAuth2StateService
@@ -130,6 +133,38 @@ class DemoPasswordFactor(SQLAlchemyPasswordFactorPersistence, PasswordFactor):
         super().__init__()
 
 
+class DemoEmailOTPFactor(SQLAlchemyEmailOTPFactorPersistence, EmailOTPFactor):
+    def __init__(self, connection: AsyncConnection) -> None:
+        self.executor = connection
+        self.email_otps_table = tables.email_otps
+        super().__init__(hash_secret=SECRET)
+
+    async def get_enrollment(
+        self, identity_id: typing.Any
+    ) -> EmailOTPEnrollment | None:
+        result = await self.executor.execute(
+            select(users_table.c.email).where(users_table.c.id == identity_id)
+        )
+        email = result.scalar_one_or_none()
+        if email is None:
+            return None
+        return EmailOTPEnrollment(id=identity_id, identity_id=identity_id, email=email)
+
+
+class LogEmailSender:
+    """Demo email "delivery": prints the code to the server log."""
+
+    async def send_code(self, email: str, code: str) -> None:
+        print(
+            "\n"
+            "+----------------------------------------------------+\n"
+            f"|  LOGIN CODE for {email:<34} |\n"
+            f"|  >>> {code:<45} |\n"
+            "+----------------------------------------------------+\n",
+            flush=True,
+        )
+
+
 class DemoGoogleFactor(SQLAlchemyOAuth2FactorPersistence, GoogleOAuth2Factor):
     def __init__(
         self, connection: AsyncConnection, state_service: OAuth2StateService
@@ -212,16 +247,27 @@ def get_line_factor(
     return DemoLineFactor(connection, state_service)
 
 
+def get_email_otp_factor(
+    connection: AsyncConnection = Depends(get_connection),
+) -> DemoEmailOTPFactor:
+    return DemoEmailOTPFactor(connection)
+
+
+def get_email_sender() -> LogEmailSender:
+    return LogEmailSender()
+
+
 def get_factors(
     # The session service must hold the SAME factor instances the routers
     # receive (advance() checks membership by instance). FastAPI's
     # per-request dependency cache guarantees that when factors are wired
     # through Depends() like this.
     password_factor: DemoPasswordFactor = Depends(get_password_factor),
+    email_otp_factor: DemoEmailOTPFactor = Depends(get_email_otp_factor),
     google_factor: DemoGoogleFactor | None = Depends(get_google_factor),
     line_factor: DemoLineFactor | None = Depends(get_line_factor),
 ) -> set[FactorBase[typing.Any]]:
-    factors: set[FactorBase[typing.Any]] = {password_factor}
+    factors: set[FactorBase[typing.Any]] = {password_factor, email_otp_factor}
     if google_factor is not None:
         factors.add(google_factor)
     if line_factor is not None:
@@ -264,6 +310,17 @@ app.include_router(
 app.include_router(
     get_session_router(
         session_service_dependency=get_session_service,
+        config=config,
+    ),
+    prefix="/auth",
+)
+app.include_router(
+    get_email_otp_router(
+        factor_dependency=get_email_otp_factor,
+        authentication_session_service_dependency=get_authentication_session_service,
+        session_service_dependency=get_session_service,
+        identity_resolver_dependency=get_identity_resolver,
+        email_sender_dependency=get_email_sender,
         config=config,
     ),
     prefix="/auth",

@@ -57,6 +57,17 @@ export interface AuthClient {
 			password: string;
 		}) => Promise<Result<LoginResponse>>;
 		/**
+		 * Email OTP (passwordless) login. Also the password-recovery entry
+		 * point: after verify, the session's AMR includes "email", which
+		 * lets changePassword run without the current password.
+		 */
+		emailOtp: {
+			/** Send a one-time code. Same response whether the email exists. */
+			request: (input: { email: string }) => Promise<Result<null>>;
+			/** Verify the code. Refreshes `$session` when login completes. */
+			verify: (input: { code: string }) => Promise<Result<LoginResponse>>;
+		};
+		/**
 		 * Start an OAuth login by navigating to the provider authorize route.
 		 * Browser only. The server redirects back to its configured
 		 * `success_redirect_url` when the flow completes.
@@ -70,6 +81,15 @@ export interface AuthClient {
 			password: string;
 		}) => Promise<Result<LoginResponse>>;
 	};
+	/**
+	 * Change (or set) the password. Requires either `currentPassword` or a
+	 * session authenticated via email OTP. The server revokes all sessions
+	 * and issues a fresh cookie.
+	 */
+	changePassword: (input: {
+		newPassword: string;
+		currentPassword?: string;
+	}) => Promise<Result<null>>;
 	/** Revoke the session server-side and clear the local state. */
 	signOut: () => Promise<void>;
 }
@@ -108,16 +128,23 @@ export function createAuthClient(options: AuthClientOptions = {}): AuthClient {
 		}
 	}
 
-	async function credentialsRequest(
+	async function jsonPost(
 		path: string,
-		credentials: { email: string; password: string },
-	): Promise<Result<LoginResponse>> {
-		const response = await fetchFn(`${baseURL}${path}`, {
+		body: Record<string, unknown>,
+	): Promise<Response> {
+		return fetchFn(`${baseURL}${path}`, {
 			method: "POST",
 			credentials: "include",
 			headers: { "content-type": "application/json" },
-			body: JSON.stringify(credentials),
+			body: JSON.stringify(body),
 		});
+	}
+
+	async function loginRequest(
+		path: string,
+		body: Record<string, unknown>,
+	): Promise<Result<LoginResponse>> {
+		const response = await jsonPost(path, body);
 		if (!response.ok) {
 			return { data: null, error: await toError(response) };
 		}
@@ -132,7 +159,17 @@ export function createAuthClient(options: AuthClientOptions = {}): AuthClient {
 		$session,
 		getSession,
 		signIn: {
-			password: (credentials) => credentialsRequest("/login", credentials),
+			password: (credentials) => loginRequest("/login", credentials),
+			emailOtp: {
+				request: async ({ email }) => {
+					const response = await jsonPost("/email-otp/request", { email });
+					if (!response.ok) {
+						return { data: null, error: await toError(response) };
+					}
+					return { data: null, error: null };
+				},
+				verify: ({ code }) => loginRequest("/email-otp/verify", { code }),
+			},
 			oauth: (provider) => {
 				if (typeof window === "undefined") {
 					throw new Error("signIn.oauth is browser-only");
@@ -141,7 +178,17 @@ export function createAuthClient(options: AuthClientOptions = {}): AuthClient {
 			},
 		},
 		signUp: {
-			password: (credentials) => credentialsRequest("/register", credentials),
+			password: (credentials) => loginRequest("/register", credentials),
+		},
+		changePassword: async ({ newPassword, currentPassword }) => {
+			const response = await jsonPost("/change-password", {
+				new_password: newPassword,
+				current_password: currentPassword ?? null,
+			});
+			if (!response.ok) {
+				return { data: null, error: await toError(response) };
+			}
+			return { data: null, error: null };
 		},
 		signOut: async () => {
 			await fetchFn(`${baseURL}/logout`, {

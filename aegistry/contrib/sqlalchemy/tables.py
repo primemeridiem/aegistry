@@ -30,6 +30,7 @@ class AegistryTables:
     authentication_sessions: Table
     sessions: Table
     password_enrollments: Table
+    email_otps: Table
 
 
 def create_tables(
@@ -116,10 +117,22 @@ def create_tables(
         Column("hash", String(512), nullable=False),
     )
 
+    email_otps = Table(
+        f"{prefix}email_otps",
+        metadata,
+        Column("id", Integer, primary_key=True),
+        Column("identity_id", identity_id_type, nullable=True),
+        Column("email", String(320), nullable=False),
+        Column("code_hash", String(64), nullable=False),
+        Column("expires_at", BigInteger, nullable=False),
+        Column("authentication_session_id", Integer, nullable=False),
+    )
+
     return AegistryTables(
         oauth2_states=oauth2_states,
         oauth2_enrollments=oauth2_enrollments,
         authentication_sessions=authentication_sessions,
         sessions=sessions,
         password_enrollments=password_enrollments,
+        email_otps=email_otps,
     )

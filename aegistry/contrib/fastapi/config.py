@@ -60,3 +60,11 @@ class EmailResolvingOAuth2Factor(typing.Protocol):
     async def get_email(self, callback_result: typing.Any) -> str:
         """Extract the email from an OAuth2Account or OAuth2Enrollment."""
         ...
+
+
+class EmailOTPSender(typing.Protocol):
+    """Application hook delivering OTP codes — wrap your email provider here."""
+
+    async def send_code(self, email: str, code: str) -> None:
+        """Send a one-time code to an email address."""
+        ...

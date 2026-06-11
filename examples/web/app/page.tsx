@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "../lib/session";
+import { ChangePasswordForm } from "./change-password-form";
 import { SignOutButton } from "./signout-button";
 
 // Server Component: the session is resolved server-side by forwarding the
@@ -24,6 +25,9 @@ export default async function Home() {
 				Session expires:{" "}
 				{new Date(session.expires_at * 1000).toLocaleString()}
 			</p>
+			<ChangePasswordForm
+				recoveredViaEmail={session.amr.includes("email")}
+			/>
 			<SignOutButton />
 			<p>
 				<Link href="/login">Login page</Link>

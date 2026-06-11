@@ -47,6 +47,7 @@ dev = [
     "email-validator>=2.0",
     "httpx>=0.28.1",
     "uvicorn>=0.30.0",
+    "python-dotenv>=1.0.0",
 ]
 
 [tool.ruff]

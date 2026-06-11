@@ -9,10 +9,16 @@ from aegistry.amr import AuthenticationMethodReference
 from aegistry.contrib.sqlalchemy import (
     AegistryTables,
     SQLAlchemyAuthenticationSessionService,
+    SQLAlchemyEmailOTPFactorPersistence,
     SQLAlchemyOAuth2StateService,
     SQLAlchemyPasswordFactorPersistence,
     SQLAlchemySessionService,
     create_tables,
+)
+from aegistry.factors.email_otp import (
+    EmailOTPEnrollment,
+    EmailOTPFactor,
+    InvalidOTPException,
 )
 from aegistry.factors.password import PasswordFactor
 from aegistry.session import InvalidSessionTokenException
@@ -145,3 +151,45 @@ class TestPasswordFactorPersistence:
         assert await factor.authenticate(42, "herminetincture") is not None
         assert await factor.authenticate(42, "wrong") is None
         assert await factor.authenticate(99, "herminetincture") is None
+
+
+class SQLAlchemyEmailOTPFactor(SQLAlchemyEmailOTPFactorPersistence, EmailOTPFactor):
+    def __init__(self, executor: typing.Any, aegistry_tables: AegistryTables) -> None:
+        self.executor = executor
+        self.email_otps_table = aegistry_tables.email_otps
+        super().__init__(hash_secret="test-secret")
+
+    async def get_enrollment(
+        self, identity_id: typing.Any
+    ) -> EmailOTPEnrollment | None:
+        return None
+
+
+@pytest.mark.anyio
+class TestEmailOTPFactorPersistence:
+    async def test_create_and_consume(
+        self, connection: AsyncConnection, aegistry_tables: AegistryTables
+    ) -> None:
+        factor = SQLAlchemyEmailOTPFactor(connection, aegistry_tables)
+
+        code, _ = await factor.create("user@example.com", 1, identity_id=42)
+        identity_id, email = await factor.consume(code, 1)
+
+        assert identity_id == 42
+        assert email == "user@example.com"
+
+        with pytest.raises(InvalidOTPException):
+            await factor.consume(code, 1)
+
+    async def test_replaced_on_new_request(
+        self, connection: AsyncConnection, aegistry_tables: AegistryTables
+    ) -> None:
+        factor = SQLAlchemyEmailOTPFactor(connection, aegistry_tables)
+
+        old_code, _ = await factor.create("user@example.com", 1)
+        new_code, _ = await factor.create("user@example.com", 1)
+
+        with pytest.raises(InvalidOTPException):
+            await factor.consume(old_code, 1)
+        _, email = await factor.consume(new_code, 1)
+        assert email == "user@example.com"
