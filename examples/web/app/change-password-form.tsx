@@ -2,6 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
 import { auth } from "../lib/auth";
 
 export function ChangePasswordForm({
@@ -30,28 +33,46 @@ export function ChangePasswordForm({
 	}
 
 	return (
-		<details>
-			<summary>Change password</summary>
-			<form
-				action={submit}
-				style={{ display: "grid", gap: "0.5rem", marginTop: "0.5rem" }}
-			>
+		<details className="border border-border bg-secondary/30 px-3 py-2">
+			<summary className="cursor-pointer select-none text-sm text-muted-foreground hover:text-foreground">
+				Change password
+			</summary>
+			<form action={submit} className="grid gap-3 py-3">
 				{!recoveredViaEmail && (
-					<input
-						name="current_password"
-						type="password"
-						placeholder="current password"
-					/>
+					<div className="grid gap-2">
+						<Label htmlFor="current_password">Current password</Label>
+						<Input
+							id="current_password"
+							name="current_password"
+							type="password"
+							placeholder="current password"
+						/>
+					</div>
 				)}
-				<input
-					name="new_password"
-					type="password"
-					placeholder="new password"
-					required
-				/>
-				<button type="submit">Change password</button>
+				{recoveredViaEmail && (
+					<p className="text-xs text-blueprint">
+						Verified via email code — no current password needed.
+					</p>
+				)}
+				<div className="grid gap-2">
+					<Label htmlFor="new_password">New password</Label>
+					<Input
+						id="new_password"
+						name="new_password"
+						type="password"
+						placeholder="new password"
+						required
+					/>
+				</div>
+				<Button type="submit" size="sm">
+					Change password
+				</Button>
 				{message && (
-					<p style={{ color: isError ? "crimson" : "seagreen" }}>{message}</p>
+					<p
+						className={`text-xs ${isError ? "text-destructive" : "text-blueprint"}`}
+					>
+						{message}
+					</p>
 				)}
 			</form>
 		</details>

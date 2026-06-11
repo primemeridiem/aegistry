@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+/* Design tokens adapted from aiengineeringfromscratch.com (dark variant):
+   navy paper #0a0d1a, ink #e8e6dc, blueprint #6b8eff, sharp 2px corners. */
+:root {
+	--background: #0a0d1a;
+	--foreground: #e8e6dc;
+	--card: #0f1424;
+	--card-foreground: #e8e6dc;
+	--popover: #0f1424;
+	--popover-foreground: #e8e6dc;
+	--primary: #e8e6dc;
+	--primary-foreground: #0a0d1a;
+	--secondary: #131830;
+	--secondary-foreground: #e8e6dc;
+	--muted: #131830;
+	--muted-foreground: #a8a6a0;
+	--accent: #1b2244;
+	--accent-foreground: #e8e6dc;
+	--destructive: #ff6b6b;
+	--border: rgba(232, 230, 220, 0.18);
+	--input: rgba(232, 230, 220, 0.18);
+	--ring: #6b8eff;
+	--blueprint: #6b8eff;
+	--grid-line: rgba(107, 142, 255, 0.06);
+	--radius: 2px;
+}
+
+@theme inline {
+	--color-background: var(--background);
+	--color-foreground: var(--foreground);
+	--color-card: var(--card);
+	--color-card-foreground: var(--card-foreground);
+	--color-popover: var(--popover);
+	--color-popover-foreground: var(--popover-foreground);
+	--color-primary: var(--primary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-secondary: var(--secondary);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-muted: var(--muted);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-accent: var(--accent);
+	--color-accent-foreground: var(--accent-foreground);
+	--color-destructive: var(--destructive);
+	--color-border: var(--border);
+	--color-input: var(--input);
+	--color-ring: var(--ring);
+	--color-blueprint: var(--blueprint);
+	--radius-sm: calc(var(--radius) - 1px);
+	--radius-md: var(--radius);
+	--radius-lg: var(--radius);
+	--radius-xl: calc(var(--radius) + 2px);
+	--font-sans: var(--font-jetbrains-mono), ui-monospace, monospace;
+	--font-display: var(--font-vt323), ui-monospace, monospace;
+	--font-serif: var(--font-source-serif), Georgia, serif;
+}
+
+@layer base {
+	* {
+		border-color: var(--color-border);
+		outline-color: color-mix(in oklab, var(--color-ring) 50%, transparent);
+	}
+	body {
+		background-color: var(--color-background);
+		color: var(--color-foreground);
+		font-family: var(--font-sans);
+	}
+}
+
+.bg-blueprint-grid {
+	background-image:
+		linear-gradient(var(--grid-line) 1px, transparent 1px),
+		linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+	background-size: 56px 56px;
+}
