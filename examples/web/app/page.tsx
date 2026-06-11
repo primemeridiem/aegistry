@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { BlueprintCorner } from "../components/blueprint-corner";
 import { getSession } from "../lib/session";
 import { ChangePasswordForm } from "./change-password-form";
 import { SignOutButton } from "./signout-button";
@@ -21,12 +22,13 @@ export default async function Home() {
 	}
 
 	return (
-		<main className="grid min-h-dvh place-items-center bg-blueprint-grid p-4">
-			<div className="w-full max-w-sm">
+		<main className="relative flex min-h-dvh justify-center overflow-hidden bg-blueprint-grid p-4 pt-[14vh]">
+			<BlueprintCorner />
+			<div className="relative w-full max-w-md">
 				<p className="mb-6 text-center font-display text-3xl tracking-wide text-blueprint">
 					AEGISTRY
 				</p>
-				<Card>
+				<Card className="shadow-xl shadow-black/40">
 					<CardHeader>
 						<CardTitle>Signed in</CardTitle>
 						<CardDescription>

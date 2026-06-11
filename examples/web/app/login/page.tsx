@@ -3,6 +3,7 @@
 import { Eye, EyeOff } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
+import { BlueprintCorner } from "../../components/blueprint-corner";
 import { GoogleIcon, LineIcon } from "../../components/provider-icons";
 import { Button } from "../../components/ui/button";
 import {
@@ -203,8 +204,9 @@ function LoginForm() {
 	);
 
 	return (
-		<main className="grid min-h-dvh place-items-center bg-blueprint-grid p-4">
-			<div className="w-full max-w-sm">
+		<main className="relative flex min-h-dvh justify-center overflow-hidden bg-blueprint-grid p-4 pt-[14vh]">
+			<BlueprintCorner />
+			<div className="relative w-full max-w-md">
 				<p className="mb-6 text-center font-display text-3xl tracking-wide text-blueprint">
 					AEGISTRY
 				</p>
@@ -223,7 +225,7 @@ function LoginForm() {
 					</TabsList>
 
 					<TabsContent value="signin" className="-mt-px">
-						<Card className="rounded-tl-none">
+						<Card className="rounded-tl-none shadow-xl shadow-black/40">
 							{view === "password" && (
 								<>
 									<CardHeader>
@@ -358,7 +360,7 @@ function LoginForm() {
 					</TabsContent>
 
 					<TabsContent value="signup" className="-mt-px">
-						<Card className="rounded-tl-none">
+						<Card className="rounded-tl-none shadow-xl shadow-black/40">
 							<CardHeader>
 								<CardTitle>Sign Up</CardTitle>
 								<CardDescription>
