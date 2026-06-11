@@ -3,6 +3,12 @@
   "version": "0.1.0",
   "description": "Framework-agnostic TypeScript client for aegistry FastAPI auth",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/primemeridiem/aegistry.git",
+    "directory": "clients/packages/client"
+  },
+  "homepage": "https://github.com/primemeridiem/aegistry#readme",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -15,7 +21,8 @@
   "files": ["dist"],
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepublishOnly": "pnpm build"
   },
   "dependencies": {
     "nanostores": "^1.0.1"
