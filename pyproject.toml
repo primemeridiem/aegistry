@@ -35,6 +35,9 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["aegistry"]
 
+[tool.hatch.build.targets.sdist]
+only-include = ["aegistry", "tests", "README.md", "LICENSE"]
+
 [dependency-groups]
 dev = [
     "ruff",
