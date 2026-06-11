@@ -9,3 +9,4 @@ node_modules/
 clients/packages/*/dist/
 .next/
 demo.db
+.env

@@ -9,7 +9,8 @@ proxy.
 ```bash
 # 1. Backend (repository root) — http://127.0.0.1:8000
 uv sync
-uv run uvicorn examples.server.main:app --reload --port 8000
+cp .env.example .env   # fill in provider credentials (optional)
+uv run uvicorn examples.server.main:app --reload --port 8000 --env-file .env
 
 # 2. Frontend — http://localhost:3000
 pnpm install && pnpm build   # builds @aegistry/client and @aegistry/react
@@ -30,12 +31,8 @@ Email/password works with zero configuration. The SQLite database is
    (type: Web application).
 2. Add the authorized redirect URI:
    `http://localhost:3000/api/auth/google/callback`
-3. Restart the backend with the credentials:
-
-```bash
-GOOGLE_CLIENT_ID=... GOOGLE_CLIENT_SECRET=... \
-  uv run uvicorn examples.server.main:app --port 8000
-```
+3. Put the credentials in `.env` (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`)
+   and restart the backend.
 
 The login page detects configured providers via `GET /auth/providers` and
 shows the button automatically.
@@ -46,12 +43,8 @@ shows the button automatically.
 2. Register the callback URL: `http://localhost:3000/api/auth/line/callback`
 3. Apply for the **email** permission (OpenID Connect → email) on the
    channel — without it LINE never returns an email and login is rejected.
-4. Restart the backend:
-
-```bash
-LINE_CHANNEL_ID=... LINE_CHANNEL_SECRET=... \
-  uv run uvicorn examples.server.main:app --port 8000
-```
+4. Put the credentials in `.env` (`LINE_CHANNEL_ID`, `LINE_CHANNEL_SECRET`)
+   and restart the backend.
 
 ## How the pieces fit
 
