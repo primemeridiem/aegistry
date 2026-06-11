@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { BlueprintCorner } from "../components/blueprint-corner";
-import { getSession } from "../lib/session";
+import { getMe, getSession } from "../lib/session";
 import { ChangePasswordForm } from "./change-password-form";
 import { SignOutButton } from "./signout-button";
 import {
@@ -21,6 +21,8 @@ export default async function Home() {
 		redirect("/login");
 	}
 
+	const me = await getMe();
+
 	return (
 		<main className="relative flex min-h-dvh justify-center overflow-hidden bg-blueprint-grid p-4 pt-[14vh]">
 			<BlueprintCorner />
@@ -29,11 +31,25 @@ export default async function Home() {
 					AEGISTRY
 				</p>
 				<Card className="shadow-xl shadow-black/40">
-					<CardHeader>
-						<CardTitle>Signed in</CardTitle>
-						<CardDescription>
-							Server-rendered from the session cookie
-						</CardDescription>
+					<CardHeader className="flex-row items-center gap-4">
+						{me?.picture_url ? (
+							// eslint-disable-next-line @next/next/no-img-element
+							<img
+								src={me.picture_url}
+								alt=""
+								className="size-12 rounded-full border border-border"
+							/>
+						) : (
+							<div className="grid size-12 place-items-center rounded-full border border-border bg-secondary font-display text-xl text-blueprint">
+								{(me?.name ?? me?.email ?? "?").charAt(0).toUpperCase()}
+							</div>
+						)}
+						<div className="grid gap-1">
+							<CardTitle>{me?.name ?? me?.email ?? "Signed in"}</CardTitle>
+							<CardDescription>
+								{me?.name ? me.email : "Server-rendered from the session cookie"}
+							</CardDescription>
+						</div>
 					</CardHeader>
 					<CardContent className="grid gap-3 text-sm">
 						<dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2">

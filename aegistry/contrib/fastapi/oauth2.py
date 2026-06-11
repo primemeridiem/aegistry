@@ -30,6 +30,7 @@ from aegistry.contrib.fastapi.config import (
     AuthConfig,
     EmailResolvingOAuth2Factor,
     IdentityResolver,
+    OAuthProfile,
 )
 from aegistry.contrib.fastapi.flow import advance_and_complete
 from aegistry.factors.oauth2.base import (
@@ -53,6 +54,37 @@ AUTHENTICATION_SESSION_TOKEN_HASH_CONTEXT_KEY = "authentication_session_token_ha
 def _error_redirect(config: AuthConfig, message: str) -> RedirectResponse:
     query = urllib.parse.urlencode({"error": message})
     return RedirectResponse(f"{config.error_redirect_url}?{query}", status_code=303)
+
+
+async def _get_profile_claims(
+    factor: OAuth2Factor[typing.Any], callback_result: typing.Any
+) -> dict[str, typing.Any] | None:
+    """Best-effort profile claims from the id_token, else the userinfo endpoint.
+
+    Profile data is supplementary — failures are logged, never fatal to login.
+    """
+    id_token = getattr(callback_result, "id_token", None)
+    get_id_token_claims = getattr(factor, "get_id_token_claims", None)
+    if id_token is not None and get_id_token_claims is not None:
+        try:
+            return typing.cast(
+                dict[str, typing.Any], await get_id_token_claims(id_token)
+            )
+        except Exception:
+            logger.exception(
+                "Profile claims from id_token failed",
+                extra={"provider": factor.identifier},
+            )
+    try:
+        return await factor.get_profile(callback_result.access_token)
+    except NotImplementedError:
+        return None
+    except Exception:
+        logger.exception(
+            "Profile claims from userinfo failed",
+            extra={"provider": factor.identifier},
+        )
+        return None
 
 
 def get_oauth2_login_router(
@@ -241,6 +273,7 @@ def get_oauth2_login_router(
         # Existing or linked account
         if enrollment is not None:
             identity_id = enrollment.identity_id
+            callback_result: typing.Any = enrollment
         # New account: resolve or create the identity by email
         else:
             assert oauth2_account is not None
@@ -254,6 +287,18 @@ def get_oauth2_login_router(
                 return _error_redirect(config, "email_unavailable")
             identity_id = await identity_resolver.get_or_create_by_email(email)
             await factor.enroll(identity_id, oauth2_account)
+            callback_result = oauth2_account
+
+        # Hand provider profile claims (name, picture, ...) to the
+        # application, if its resolver opts in via apply_profile().
+        apply_profile = getattr(identity_resolver, "apply_profile", None)
+        if apply_profile is not None:
+            claims = await _get_profile_claims(factor, callback_result)
+            if claims is not None:
+                await apply_profile(
+                    identity_id,
+                    OAuthProfile.from_claims(oauth2_state.provider, claims),
+                )
 
         result = await advance_and_complete(
             authentication_session_service=authentication_session_service,

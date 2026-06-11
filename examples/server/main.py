@@ -22,12 +22,15 @@ import os
 import typing
 from collections.abc import AsyncGenerator
 
-from fastapi import Depends, FastAPI
-from sqlalchemy import Column, Integer, MetaData, String, Table, insert, select
+from fastapi import Depends, FastAPI, HTTPException
+from pydantic import BaseModel
+from sqlalchemy import Column, Integer, MetaData, String, Table, insert, select, update
 from sqlalchemy.ext.asyncio import AsyncConnection, create_async_engine
 
 from aegistry.contrib.fastapi import (
     AuthConfig,
+    OAuthProfile,
+    build_current_session,
     get_email_otp_router,
     get_oauth2_login_router,
     get_password_router,
@@ -48,6 +51,7 @@ from aegistry.factors.oauth2.google import GoogleOAuth2Factor
 from aegistry.factors.oauth2.line import LineOAuth2Factor
 from aegistry.factors.oauth2.state import OAuth2StateService
 from aegistry.factors.password import PasswordFactor
+from aegistry.session import Session
 
 SECRET = os.environ.get("AEGISTRY_SECRET", "demo-secret-do-not-use-in-production")
 DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite+aiosqlite:///./demo.db")
@@ -67,6 +71,8 @@ users_table = Table(
     metadata,
     Column("id", Integer, primary_key=True),
     Column("email", String(320), nullable=False, unique=True),
+    Column("name", String(255), nullable=True),
+    Column("picture_url", String(1024), nullable=True),
 )
 
 engine = create_async_engine(DATABASE_URL)
@@ -115,6 +121,19 @@ class UsersIdentityResolver:
             insert(users_table).values(email=email).returning(users_table.c.id)
         )
         return result.scalar_one()
+
+    async def apply_profile(self, identity_id: int, profile: OAuthProfile) -> None:
+        values: dict[str, typing.Any] = {}
+        if profile.name is not None:
+            values["name"] = profile.name
+        if profile.picture is not None:
+            values["picture_url"] = profile.picture
+        if values:
+            await self.connection.execute(
+                update(users_table)
+                .where(users_table.c.id == identity_id)
+                .values(**values)
+            )
 
 
 def get_identity_resolver(
@@ -367,3 +386,29 @@ if LINE_CHANNEL_ID and LINE_CHANNEL_SECRET:
 async def providers() -> dict[str, list[str]]:
     """Which OAuth providers are configured — the demo UI adapts to this."""
     return {"providers": enabled_providers}
+
+
+class Me(BaseModel):
+    id: int
+    email: str
+    name: str | None
+    picture_url: str | None
+
+
+_current_session = build_current_session(get_session_service, config, auto_error=True)
+
+
+@app.get("/auth/me", response_model=Me)
+async def me(
+    session: Session | None = Depends(_current_session),
+    connection: AsyncConnection = Depends(get_connection),
+) -> Me:
+    """App-level user endpoint: session identity joined to the users table."""
+    assert session is not None
+    result = await connection.execute(
+        select(users_table).where(users_table.c.id == session.identity_id)
+    )
+    row = result.fetchone()
+    if row is None:
+        raise HTTPException(status_code=404)
+    return Me(**row._asdict())

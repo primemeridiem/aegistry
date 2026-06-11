@@ -10,6 +10,7 @@ from aegistry.authentication_session import (
 )
 from aegistry.contrib.fastapi import (
     AuthConfig,
+    OAuthProfile,
     build_current_identity_id,
     get_email_otp_router,
     get_oauth2_login_router,
@@ -122,7 +123,12 @@ class FakeOAuth2Factor(OAuth2Factor[dict]):
         )
 
     async def get_profile(self, access_token: str) -> dict[str, typing.Any]:
-        return {"sub": "fake-account-1", "email": "user@example.com"}
+        return {
+            "sub": "fake-account-1",
+            "email": "user@example.com",
+            "name": "Fake User",
+            "picture": "https://provider.example.com/avatar.png",
+        }
 
     async def get_email(self, callback_result: typing.Any) -> str:
         return "user@example.com"
@@ -154,6 +160,7 @@ class FakeOAuth2Factor(OAuth2Factor[dict]):
 class InMemoryIdentityResolver:
     def __init__(self) -> None:
         self.users: dict[str, int] = {}
+        self.profiles: dict[int, OAuthProfile] = {}
         self._id = 0
 
     async def get_id_by_email(self, email: str) -> int | None:
@@ -164,6 +171,9 @@ class InMemoryIdentityResolver:
             self._id += 1
             self.users[email] = self._id
         return self.users[email]
+
+    async def apply_profile(self, identity_id: int, profile: OAuthProfile) -> None:
+        self.profiles[identity_id] = profile
 
 
 class InMemoryEmailOTPFactor(EmailOTPFactor):
@@ -724,3 +734,52 @@ class TestChangePassword:
             json={"email": "otp@example.com", "password": "firstpassword1"},
         )
         assert response.status_code == 200
+
+
+class TestOAuthProfile:
+    def test_profile_applied_on_signup(
+        self,
+        client: TestClient,
+        app_and_services: tuple[FastAPI, dict[str, typing.Any]],
+    ) -> None:
+        _, services = app_and_services
+        resolver: InMemoryIdentityResolver = services["identity_resolver"]
+
+        response = client.get("/auth/fake/authorize", follow_redirects=False)
+        state = response.headers["location"].split("state=")[1]
+        client.get(f"/auth/fake/callback?code=CODE&state={state}")
+
+        profile = resolver.profiles[1]
+        assert profile.provider == "fake"
+        assert profile.name == "Fake User"
+        assert profile.picture == "https://provider.example.com/avatar.png"
+        assert profile.email == "user@example.com"
+
+    def test_profile_refreshed_on_returning_login(
+        self,
+        client: TestClient,
+        app_and_services: tuple[FastAPI, dict[str, typing.Any]],
+    ) -> None:
+        _, services = app_and_services
+        resolver: InMemoryIdentityResolver = services["identity_resolver"]
+        oauth2_factor: FakeOAuth2Factor = services["oauth2_factor"]
+
+        response = client.get("/auth/fake/authorize", follow_redirects=False)
+        state = response.headers["location"].split("state=")[1]
+        client.get(f"/auth/fake/callback?code=CODE&state={state}")
+
+        # Provider data changed; a second login must refresh it
+        original_get_profile = oauth2_factor.get_profile
+
+        async def updated_profile(access_token: str) -> dict[str, typing.Any]:
+            claims = await original_get_profile(access_token)
+            return {**claims, "name": "Renamed User"}
+
+        oauth2_factor.get_profile = updated_profile  # type: ignore[method-assign]
+
+        client.cookies.clear()
+        response = client.get("/auth/fake/authorize", follow_redirects=False)
+        state = response.headers["location"].split("state=")[1]
+        client.get(f"/auth/fake/callback?code=CODE&state={state}")
+
+        assert resolver.profiles[1].name == "Renamed User"

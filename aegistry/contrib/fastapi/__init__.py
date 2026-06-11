@@ -5,6 +5,8 @@ from aegistry.contrib.fastapi.config import (
     EmailOTPSender,
     EmailResolvingOAuth2Factor,
     IdentityResolver,
+    OAuthProfile,
+    ProfileApplyingIdentityResolver,
 )
 from aegistry.contrib.fastapi.dependencies import (
     build_current_identity_id,
@@ -22,6 +24,8 @@ __all__ = [
     "EmailResolvingOAuth2Factor",
     "IdentityResolver",
     "LoginResult",
+    "OAuthProfile",
+    "ProfileApplyingIdentityResolver",
     "SessionInfo",
     "advance_and_complete",
     "build_current_identity_id",

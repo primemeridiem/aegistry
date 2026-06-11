@@ -5,6 +5,38 @@ import typing
 
 
 @dataclasses.dataclass
+class OAuthProfile:
+    """Provider profile claims, normalized to OIDC standard claim names.
+
+    Passed to the identity resolver's optional ``apply_profile`` hook on
+    every OAuth login so applications can store/refresh user metadata
+    (display name, avatar) on their own user table.
+    """
+
+    provider: str
+    name: str | None
+    picture: str | None
+    email: str | None
+    email_verified: bool | None
+    locale: str | None
+    raw: dict[str, typing.Any]
+
+    @classmethod
+    def from_claims(
+        cls, provider: str, claims: dict[str, typing.Any]
+    ) -> "OAuthProfile":
+        return cls(
+            provider=provider,
+            name=claims.get("name"),
+            picture=claims.get("picture"),
+            email=claims.get("email"),
+            email_verified=claims.get("email_verified"),
+            locale=claims.get("locale"),
+            raw=claims,
+        )
+
+
+@dataclasses.dataclass
 class AuthConfig:
     """Settings shared by the aegistry FastAPI routers and dependencies.
 
@@ -38,6 +70,11 @@ class IdentityResolver(typing.Protocol):
     """Application hook mapping provider emails to identity IDs.
 
     Implementations typically wrap the application's user repository.
+
+    Implementations may additionally define an ``apply_profile`` method (see
+    :class:`ProfileApplyingIdentityResolver`); when present, the OAuth login
+    router calls it on every successful login with the provider's normalized
+    profile claims, so the application can store or refresh user metadata.
     """
 
     async def get_id_by_email(self, email: str) -> typing.Any | None:
@@ -59,6 +96,19 @@ class EmailResolvingOAuth2Factor(typing.Protocol):
 
     async def get_email(self, callback_result: typing.Any) -> str:
         """Extract the email from an OAuth2Account or OAuth2Enrollment."""
+        ...
+
+
+class ProfileApplyingIdentityResolver(IdentityResolver, typing.Protocol):
+    """IdentityResolver that also consumes OAuth profile claims."""
+
+    async def apply_profile(
+        self, identity_id: typing.Any, profile: OAuthProfile
+    ) -> None:
+        """Store or refresh user metadata from a provider profile.
+
+        Called after every successful OAuth login (new and returning users).
+        """
         ...
 
 

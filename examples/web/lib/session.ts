@@ -10,3 +10,20 @@ export async function getSession() {
 		cookie: (await cookies()).toString(),
 	});
 }
+
+export interface Me {
+	id: number;
+	email: string;
+	name: string | null;
+	picture_url: string | null;
+}
+
+/** Server-side user lookup against the demo's app-level /auth/me endpoint. */
+export async function getMe(): Promise<Me | null> {
+	const response = await fetch(`${API_URL}/auth/me`, {
+		headers: { cookie: (await cookies()).toString() },
+		cache: "no-store",
+	});
+	if (!response.ok) return null;
+	return (await response.json()) as Me;
+}
